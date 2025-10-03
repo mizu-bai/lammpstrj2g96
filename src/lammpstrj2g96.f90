@@ -1,4 +1,5 @@
 program main
+    use omp_lib  ! only for wall time
     implicit none
 
     interface
@@ -60,9 +61,9 @@ program main
 
     !> summary
     integer :: number_of_frames
-    integer :: time_start
-    integer :: time_end
-    integer :: time_total
+    real(kind=8) :: time_start
+    real(kind=8) :: time_end
+    real(kind=8) :: time_total
 
     !> loop index
     integer :: i
@@ -104,7 +105,7 @@ program main
 
     !> read contents
     number_of_frames = 0
-    call system_clock(time_start)
+    time_start = omp_get_wtime()
 
     do
         !> read time
@@ -199,17 +200,25 @@ program main
         number_of_frames = number_of_frames + 1
     end do
 
-    call system_clock(time_end)
+    time_end = omp_get_wtime()
     time_total = time_end - time_start
 
     close(lammpstrj_unit)
     close(g96_unit)
+    
+    deallocate(id)
+    deallocate(type)
+    deallocate(xyz)
+
+    if (has_vel) then
+        deallocate(vel)
+    end if
 
     !> summary
     print *, "Summary"
     print *, "Number of frames: ", number_of_frames
-    print *, "Time: ", time_total * 1.0d-03, "s"
-    print *, "Speed: ", number_of_frames / (time_total * 1.0d-03), "frame/s"
+    print *, "Time (s): ", time_total
+    print *, "Performance (frame/s): ", dble(number_of_frames) / time_total
 
 end program
 
