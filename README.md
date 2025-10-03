@@ -4,15 +4,21 @@ A lammpstrj to g96 converter
 
 ## Build
 
+```sh
+$ make
 ```
-$ gfortran src/lammpstrj2g96.f90 -O2 -o lammpstrj2g96.x
+
+or
+
+```sh
+$ FC=ifort make
 ```
 
 ## Usage
 
 Simply run this command below to get your `md.g96`.
 
-```
+```sh
 $ ./lammpstrj2g96.x md.lammpstrj
 ```
 
