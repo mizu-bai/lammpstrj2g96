@@ -37,14 +37,21 @@ program main
     integer :: argc
     
     !> file
+    character(len=80) :: argument
     character(len=80) :: lammpstrj_file
+    character(len=80) :: g96_file
     integer, parameter :: lammpstrj_unit = 100
     integer, parameter :: g96_unit = 200
     integer :: stat
 
+    
     !> lammpstrj contents
+    !> units_enum
+    !> 1 -> real
+    !> 2 -> metal
+    integer :: units_enum
     character(len=80) :: line
-    real(kind=8) :: time  ! fs
+    real(kind=8) :: time  ! depends on unit
     integer :: timestep
     integer :: number_of_atoms
     real(kind=8) :: xlo  ! Angstrom
@@ -68,14 +75,7 @@ program main
     !> loop index
     integer :: i
 
-    !> parse command line arguments
-    argc = iargc()
-
-    if (argc .ne. 1) then
-        print "(A)", "Usage: lammpstrj2g96 md.lammpstrj"
-        stop
-    end if
-
+    !> NOTICE
     print "(A)", "NOTE: This converter only supports lammpstrj dumped by:"
     print "(A)", ""
     print "(A)", "    # w/ velocity"
@@ -94,14 +94,46 @@ program main
     print "(A)", "    rerun previous.lammpstrj dump x y z"
     print "(A)", ""
 
-    call getarg(1, lammpstrj_file)
+
+    !> parse command line arguments
+    argc = iargc()
+
+    if (argc .lt. 2) then
+        print "(A)", "Usage:"
+        print "(A)", "$ lammpstrj2g96.x {-real|-metal} LAMMPSTRJ [G96]"
+        stop
+    end if
+
+    units_enum = -1  ! unknown
+
+    call getarg(1, argument)
+
+    !> check units
+    if (argument .eq. "-real") then
+        units_enum = 1
+    else if (argument .eq. "-metal") then
+        units_enum = 2
+    else
+        print *, "ERROR: Unsupported unit: ", argument
+        print *, "valid options: -real or -metal"
+        stop
+    end if
+
+    !> lammpstrj
+    call getarg(2, lammpstrj_file)
+    lammpstrj_file = trim(lammpstrj_file)
+
+    if (argc .eq. 3) then
+        call getarg(3, g96_file)
+        g96_file = trim(g96_file)
+    else
+        g96_file = "traj.g96"
+    end if
 
     !> read lammpstrj file
     open(unit=lammpstrj_unit, file=trim(lammpstrj_file), status="old")
     !> open g96 file to write
-    open(unit=g96_unit, &
-        file=lammpstrj_file(1: index(lammpstrj_file, ".lammpstrj") - 1) &
-        // ".g96", status="replace")
+    open(unit=g96_unit, file=trim(g96_file), status="replace")
 
     !> read contents
     number_of_frames = 0
@@ -186,6 +218,13 @@ program main
                         id(i), type(i), xyz(:, i)
                 endif
             end do
+        end if
+
+        !> handle time & timestep
+        if (units_enum .eq. 2) then
+            !> units = metal
+            !> time: ps -> fs
+            time = time * 1.0d03
         end if
 
         !> write g96
