@@ -16,10 +16,8 @@ $ FC=ifort make
 
 ## Usage
 
-Simply run this command below to get your `md.g96`.
-
 ```sh
-$ ./lammpstrj2g96.x md.lammpstrj
+$ ./lammpstrj2g96.x {-real|-metal} LAMMPSTRJ [G96]
 ```
 
 NOTE: This converter only supports lammpstrj dumped by:
